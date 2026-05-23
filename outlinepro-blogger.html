@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OutlinePro AI | Neural Blog Structuring</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #fcfaff; color: #1e1b4b; padding: 16px; }
+  .wrap { max-width: 1100px; margin: 0 auto; }
+
+  /* NAV */
+  .nav { background: #fff; border: 1px solid #e9e5f5; border-radius: 16px; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+  .brand { font-size: 18px; font-weight: 800; color: #8b5cf6; display: flex; align-items: center; gap: 8px; }
+  .brand span { color: #1e1b4b; }
+  .export-btn { background: #fff; border: 1px solid #e9e5f5; color: #1e1b4b; padding: 8px 16px; border-radius: 10px; font-weight: 700; font-size: 12px; cursor: pointer; font-family: inherit; transition: background 0.15s; }
+  .export-btn:hover { background: #f5f3ff; }
+
+  /* API BAR */
+  .api-bar { background: #fff; border: 1px solid #e9e5f5; border-radius: 14px; padding: 12px 18px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
+  .api-bar label { font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; }
+  .api-bar input { flex: 1; min-width: 180px; padding: 8px 12px; background: #f8f7ff; border: 1.5px solid #e9e5f5; border-radius: 9px; font-size: 12px; font-family: inherit; outline: none; color: #334155; }
+  .api-bar input:focus { border-color: #8b5cf6; }
+  .api-status { font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 8px; white-space: nowrap; }
+  .api-status.demo { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+  .api-status.live { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+  .api-link { font-size: 11px; color: #8b5cf6; text-decoration: none; white-space: nowrap; }
+  .api-link:hover { text-decoration: underline; }
+
+  /* MAIN GRID */
+  .grid { display: flex; gap: 20px; align-items: flex-start; }
+
+  /* SIDEBAR */
+  .sidebar { flex: 0 0 300px; background: #fff; border: 1px solid #e9e5f5; border-radius: 20px; padding: 22px; box-shadow: 0 4px 16px rgba(139,92,246,0.06); }
+  .field { margin-bottom: 16px; }
+  .field label { display: block; font-size: 10px; font-weight: 800; text-transform: uppercase; color: #64748b; letter-spacing: 0.8px; margin-bottom: 6px; }
+  .field input, .field select, .field textarea { width: 100%; padding: 11px 13px; border: 1.5px solid #e9e5f5; border-radius: 10px; font-size: 13px; font-family: inherit; color: #334155; background: #f8f7ff; outline: none; transition: border-color 0.2s; appearance: none; -webkit-appearance: none; }
+  .field input:focus, .field select:focus, .field textarea:focus { border-color: #8b5cf6; background: #fff; box-shadow: 0 0 0 3px rgba(139,92,246,0.08); }
+  .field textarea { resize: vertical; min-height: 80px; }
+
+  .gen-btn { width: 100%; padding: 13px; background: #8b5cf6; color: #fff; border: none; border-radius: 12px; font-weight: 800; font-size: 14px; cursor: pointer; font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 8px; transition: background 0.15s, transform 0.1s; margin-bottom: 14px; }
+  .gen-btn:hover:not(:disabled) { background: #7c3aed; transform: translateY(-2px); }
+  .gen-btn:disabled { background: #94a3b8; cursor: not-allowed; transform: none; }
+
+  .copy-btn { width: 100%; padding: 10px; background: #f5f3ff; color: #5b21b6; border: 1px solid #e9e5f5; border-radius: 10px; font-weight: 700; font-size: 13px; cursor: pointer; font-family: inherit; transition: background 0.15s; }
+  .copy-btn:hover { background: #ede9fe; }
+
+  .tip-box { background: #f5f3ff; border: 1px solid #e9e5f5; border-radius: 12px; padding: 14px; margin-top: 14px; font-size: 12px; color: #5b21b6; line-height: 1.6; }
+
+  /* MAIN CONTENT */
+  .main-card { flex: 1; background: #fff; border: 1px solid #e9e5f5; border-radius: 22px; padding: 28px; min-height: 500px; }
+  .canvas-title { font-size: 16px; font-weight: 800; color: #1e1b4b; margin-bottom: 22px; display: flex; align-items: center; gap: 8px; }
+
+  /* EMPTY STATE */
+  .empty-state { text-align: center; color: #c4b5fd; padding: 70px 20px; }
+  .empty-state div { font-size: 48px; margin-bottom: 14px; }
+  .empty-state p { font-size: 14px; color: #94a3b8; }
+
+  /* LOADING */
+  .loading { text-align: center; padding: 60px 20px; }
+  .loading-icon { font-size: 36px; animation: pulse 1s infinite alternate; }
+  @keyframes pulse { to { transform: scale(1.15); opacity: 0.7; } }
+  .loading p { color: #64748b; font-size: 13px; margin-top: 12px; }
+
+  /* OUTLINE NODES */
+  .outline-wrap { display: flex; flex-direction: column; gap: 6px; }
+  .outline-node { border-left: 3px solid #e9e5f5; padding: 10px 16px; border-radius: 0 10px 10px 0; transition: border-color 0.2s, background 0.2s; cursor: default; }
+  .outline-node:hover { border-left-color: #8b5cf6; background: #faf8ff; }
+  .outline-node.h1 { border-left-color: #8b5cf6; background: #f5f3ff; border-radius: 10px; padding: 14px 18px; margin-bottom: 8px; }
+  .outline-node.h2 { margin-left: 10px; }
+  .outline-node.h3 { margin-left: 30px; border-left-color: #c4b5fd; }
+  .outline-node.h4 { margin-left: 50px; border-left-color: #ddd6fe; }
+  .h-badge { font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 5px; margin-right: 8px; text-transform: uppercase; letter-spacing: 0.5px; display: inline-block; }
+  .badge-h1 { background: #8b5cf6; color: #fff; }
+  .badge-h2 { background: #ede9fe; color: #5b21b6; }
+  .badge-h3 { background: #f5f3ff; color: #7c3aed; }
+  .badge-h4 { background: #faf8ff; color: #a78bfa; }
+  .node-text { font-size: 14px; font-weight: 600; color: #1e1b4b; display: inline; }
+  .node-text.h1t { font-size: 18px; font-weight: 800; }
+  .node-text.h2t { font-size: 15px; font-weight: 700; }
+  .node-text.h3t { font-size: 13px; font-weight: 600; color: #334155; }
+  .node-text.h4t { font-size: 12px; font-weight: 500; color: #64748b; font-style: italic; }
+
+  /* META SECTION */
+  .meta-section { margin-top: 24px; padding: 18px; background: #f8f7ff; border-radius: 14px; border: 1px solid #e9e5f5; }
+  .meta-title { font-size: 11px; font-weight: 800; color: #8b5cf6; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+  .meta-item { font-size: 12px; color: #334155; margin-bottom: 6px; line-height: 1.6; }
+  .meta-label { font-weight: 700; color: #5b21b6; }
+
+  /* MODAL */
+  .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(30,27,75,0.85); z-index: 100; justify-content: center; align-items: center; }
+  .modal-box { background: #fff; padding: 28px; border-radius: 22px; width: 90%; max-width: 420px; }
+  .modal-box h3 { font-size: 18px; font-weight: 800; margin-bottom: 6px; }
+  .modal-box p  { font-size: 12px; color: #64748b; margin-bottom: 18px; }
+  .gst-row { display: flex; justify-content: space-between; font-size: 13px; color: #475569; padding: 8px 0; border-bottom: 1px solid #f1f5f9; }
+  .gst-total { display: flex; justify-content: space-between; font-size: 18px; font-weight: 800; color: #8b5cf6; margin-top: 14px; padding-top: 14px; border-top: 2px solid #e9e5f5; }
+  .pay-btn    { width: 100%; padding: 14px; background: #1e1b4b; color: #fff; border: none; border-radius: 12px; font-weight: 800; font-size: 14px; cursor: pointer; font-family: inherit; margin-top: 18px; }
+  .pay-btn:hover { background: #2d2a6e; }
+  .back-link  { text-align: center; margin-top: 12px; font-size: 12px; color: #94a3b8; cursor: pointer; }
+  .back-link:hover { color: #8b5cf6; }
+
+  /* SPIN */
+  .spin { display: inline-block; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @media (max-width: 680px) {
+    .grid { flex-direction: column; }
+    .sidebar { flex: 0 0 auto; width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- NAV -->
+  <div class="nav">
+    <div class="brand">📐 OutlinePro<span>AI</span></div>
+    <button class="export-btn" onclick="openModal()">📄 Paid SEO Brief Export ₹299</button>
+  </div>
+
+  <!-- API BAR -->
+  <div class="api-bar">
+    <label>Anthropic API Key</label>
+    <input type="password" id="apiKey" placeholder="sk-ant-... (for real AI-powered outlines)">
+    <span class="api-status demo" id="apiStatus">Demo Mode</span>
+    <a class="api-link" href="https://console.anthropic.com" target="_blank">Get Free Key →</a>
+  </div>
+
+  <!-- MAIN GRID -->
+  <div class="grid">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="field">
+        <label>Blog Topic / Keyword</label>
+        <input type="text" id="topic" placeholder="e.g. GST Filing Guide for Small Business">
+      </div>
+      <div class="field">
+        <label>Target Audience</label>
+        <textarea id="audience" placeholder="e.g. Small business owners in India who need to file GST returns..."></textarea>
+      </div>
+      <div class="field">
+        <label>Article Goal</label>
+        <select id="goal">
+          <option value="step-by-step guide">📋 Step-by-Step Guide</option>
+          <option value="top listicle / round-up">📝 Top Listicle / Round-up</option>
+          <option value="thought leadership / opinion piece">💡 Thought Leadership</option>
+          <option value="beginner's explainer">🎓 Beginner's Explainer</option>
+          <option value="comparison / versus article">⚖️ Comparison / Versus</option>
+          <option value="case study">📊 Case Study</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Word Count Target</label>
+        <select id="wordCount">
+          <option value="800-1000">Short (800–1000 words)</option>
+          <option value="1500-2000" selected>Medium (1500–2000 words)</option>
+          <option value="2500-3500">Long-form (2500–3500 words)</option>
+          <option value="4000+">Pillar Content (4000+ words)</option>
+        </select>
+      </div>
+      <button class="gen-btn" id="genBtn" onclick="generateOutline()">
+        🧠 Engineer Outline
+      </button>
+      <button class="copy-btn" id="copyBtn" onclick="copyOutline()" style="display:none">
+        📋 Copy Outline
+      </button>
+      <div class="tip-box">
+        💡 AI analyzes semantic search intent to create high-ranking SERP-optimized blog structures with proper H-tag hierarchy.
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-card">
+      <div class="canvas-title">📐 Content Structure Canvas</div>
+
+      <div id="emptyState" class="empty-state">
+        <div>✍️</div>
+        <p>Define your topic on the left and click<br><strong>Engineer Outline</strong> to generate a structure.</p>
+      </div>
+
+      <div id="loadingState" class="loading" style="display:none">
+        <div class="loading-icon">🧠</div>
+        <p id="loadingMsg">Analyzing semantic search intent...</p>
+      </div>
+
+      <div id="outlineOutput" style="display:none">
+        <div class="outline-wrap" id="outlineWrap"></div>
+        <div class="meta-section" id="metaSection" style="display:none">
+          <div class="meta-title">🔍 SEO Meta Suggestions</div>
+          <div id="metaContent"></div>
+        </div>
+      </div>
+    </main>
+
+  </div>
+</div>
+
+<!-- BILLING MODAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal-box">
+    <h3>📄 Download SEO Brief</h3>
+    <p>Get a production-ready PDF with keyword density maps, meta descriptions, internal linking suggestions and competitor analysis.</p>
+    <div class="gst-row"><span>Professional SEO Brief License</span><span>₹253.39</span></div>
+    <div class="gst-row"><span>CGST (9%)</span><span>₹22.81</span></div>
+    <div class="gst-row"><span>SGST (9%)</span><span>₹22.81</span></div>
+    <div class="gst-total"><span>Total Amount</span><span>₹299.00</span></div>
+    <button class="pay-btn" onclick="alert('Redirecting to Payment Gateway...')">🔒 Secure Pay & Download</button>
+    <div class="back-link" onclick="closeModal()">← Back to Architect</div>
+  </div>
+</div>
+
+<script>
+  // Demo outlines for different goals
+  var demoOutlines = {
+    'step-by-step guide': function(topic) { return [
+      {h:'H1', text: topic},
+      {h:'H2', text: 'Introduction: Why This Matters'},
+      {h:'H3', text: 'Common Challenges People Face'},
+      {h:'H2', text: 'Prerequisites and What You Need'},
+      {h:'H3', text: 'Tools and Resources Required'},
+      {h:'H2', text: 'Step 1: Getting Started'},
+      {h:'H3', text: 'Setting Up Your Foundation'},
+      {h:'H2', text: 'Step 2: Core Implementation'},
+      {h:'H3', text: 'Best Practices to Follow'},
+      {h:'H3', text: 'Common Mistakes to Avoid'},
+      {h:'H2', text: 'Step 3: Advanced Techniques'},
+      {h:'H2', text: 'Step 4: Monitoring and Optimization'},
+      {h:'H2', text: 'Conclusion and Next Steps'},
+      {h:'H3', text: 'Key Takeaways'},
+    ];},
+    'top listicle / round-up': function(topic) { return [
+      {h:'H1', text: 'Top 10 ' + topic + ' You Need to Know'},
+      {h:'H2', text: 'Introduction and Selection Criteria'},
+      {h:'H2', text: '#1: The Industry Leader'},
+      {h:'H3', text: 'Key Features and Benefits'},
+      {h:'H2', text: '#2: Best for Beginners'},
+      {h:'H2', text: '#3: Most Cost-Effective Option'},
+      {h:'H3', text: 'Pricing Breakdown'},
+      {h:'H2', text: '#4–#7: Mid-Tier Contenders'},
+      {h:'H2', text: '#8–#10: Niche Picks'},
+      {h:'H2', text: 'Comparison Table'},
+      {h:'H2', text: 'Final Verdict and Recommendation'},
+    ];},
+    default: function(topic) { return [
+      {h:'H1', text: topic},
+      {h:'H2', text: 'Understanding the Core Concepts'},
+      {h:'H3', text: 'The Current State of the Industry'},
+      {h:'H3', text: 'Key Challenges and Pain Points'},
+      {h:'H2', text: 'Strategic Framework for Success'},
+      {h:'H3', text: 'Framework Component 1: Research'},
+      {h:'H3', text: 'Framework Component 2: Implementation'},
+      {h:'H4', text: 'Practical Tips for Implementation'},
+      {h:'H2', text: 'Real-World Examples and Case Studies'},
+      {h:'H2', text: 'Common Mistakes and How to Avoid Them'},
+      {h:'H2', text: 'Future Outlook and Emerging Trends'},
+      {h:'H2', text: 'Conclusion and Action Steps'},
+    ];}
+  };
+
+  function generateOutline() {
+    var topic    = document.getElementById('topic').value.trim();
+    var audience = document.getElementById('audience').value.trim();
+    var goal     = document.getElementById('goal').value;
+    var wc       = document.getElementById('wordCount').value;
+    var apiKey   = document.getElementById('apiKey').value.trim();
+    var genBtn   = document.getElementById('genBtn');
+
+    if (!topic) { alert('Please enter a blog topic!'); return; }
+
+    document.getElementById('emptyState').style.display   = 'none';
+    document.getElementById('outlineOutput').style.display = 'none';
+    document.getElementById('loadingState').style.display  = 'block';
+    genBtn.disabled = true;
+    genBtn.innerHTML = '<span class="spin">⏳</span> Analyzing...';
+    document.getElementById('loadingMsg').innerText = 'Analyzing semantic search intent...';
+
+    if (apiKey && apiKey.startsWith('sk-ant-')) {
+      // Real Claude AI
+      var prompt = 'Create a comprehensive, SEO-optimized blog outline for the following:\n\n'
+        + 'Topic: ' + topic + '\n'
+        + 'Target Audience: ' + (audience || 'General readers') + '\n'
+        + 'Article Goal: ' + goal + '\n'
+        + 'Target Word Count: ' + wc + ' words\n\n'
+        + 'Return ONLY a valid JSON object with this exact structure:\n'
+        + '{\n'
+        + '  "outline": [\n'
+        + '    {"h": "H1", "text": "Main Title"},\n'
+        + '    {"h": "H2", "text": "Section Title"},\n'
+        + '    {"h": "H3", "text": "Subsection"},\n'
+        + '    ...\n'
+        + '  ],\n'
+        + '  "meta_title": "SEO optimized title under 60 chars",\n'
+        + '  "meta_description": "Compelling meta description under 160 chars",\n'
+        + '  "focus_keyword": "Primary keyword",\n'
+        + '  "lsi_keywords": ["keyword1", "keyword2", "keyword3"]\n'
+        + '}\n\n'
+        + 'Include 12-18 outline nodes with proper H1/H2/H3/H4 hierarchy. No markdown, no explanation — just the JSON.';
+
+      fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1200,
+          messages: [{ role: 'user', content: prompt }]
+        })
+      })
+      .then(function(r){ return r.json(); })
+      .then(function(data) {
+        if (data.content && data.content[0]) {
+          var text = data.content[0].text || '';
+          try {
+            var clean = text.replace(/```json|```/g,'').trim();
+            var parsed = JSON.parse(clean);
+            renderOutline(parsed.outline, parsed);
+            document.getElementById('apiStatus').className = 'api-status live';
+            document.getElementById('apiStatus').innerText = '✅ AI Active';
+          } catch(e) {
+            var fallback = (demoOutlines[goal] || demoOutlines.default)(topic);
+            renderOutline(fallback, null);
+          }
+        } else {
+          var fallback2 = (demoOutlines[goal] || demoOutlines.default)(topic);
+          renderOutline(fallback2, null);
+        }
+        finishGen();
+      })
+      .catch(function() {
+        var fallback3 = (demoOutlines[goal] || demoOutlines.default)(topic);
+        renderOutline(fallback3, null);
+        finishGen();
+      });
+      return;
+    }
+
+    // Demo mode
+    setTimeout(function() {
+      var nodes = (demoOutlines[goal] || demoOutlines.default)(topic);
+      renderOutline(nodes, null);
+      finishGen();
+    }, 1600);
+  }
+
+  function renderOutline(nodes, meta) {
+    var wrap = document.getElementById('outlineWrap');
+    wrap.innerHTML = '';
+    nodes.forEach(function(n) {
+      var node = document.createElement('div');
+      var hLow = n.h.toLowerCase();
+      node.className = 'outline-node ' + hLow;
+      var badgeClass = 'badge-' + hLow;
+      var textClass  = hLow + 't';
+      node.innerHTML =
+        '<span class="h-badge ' + badgeClass + '">' + n.h + '</span>'
+        + '<span class="node-text ' + textClass + '">' + escHtml(n.text) + '</span>';
+      wrap.appendChild(node);
+    });
+
+    // Meta section
+    var metaSec = document.getElementById('metaSection');
+    var metaCon = document.getElementById('metaContent');
+    if (meta && meta.meta_title) {
+      metaCon.innerHTML =
+        '<div class="meta-item"><span class="meta-label">Title Tag: </span>' + escHtml(meta.meta_title) + '</div>'
+        + '<div class="meta-item"><span class="meta-label">Meta Description: </span>' + escHtml(meta.meta_description || '') + '</div>'
+        + '<div class="meta-item"><span class="meta-label">Focus Keyword: </span>' + escHtml(meta.focus_keyword || '') + '</div>'
+        + (meta.lsi_keywords ? '<div class="meta-item"><span class="meta-label">LSI Keywords: </span>' + meta.lsi_keywords.join(', ') + '</div>' : '');
+      metaSec.style.display = 'block';
+    } else {
+      metaSec.style.display = 'none';
+    }
+
+    document.getElementById('loadingState').style.display  = 'none';
+    document.getElementById('outlineOutput').style.display = 'block';
+    document.getElementById('copyBtn').style.display = 'block';
+  }
+
+  function finishGen() {
+    var btn = document.getElementById('genBtn');
+    btn.disabled = false;
+    btn.innerHTML = '🧠 Engineer Outline';
+  }
+
+  function copyOutline() {
+    var text = document.getElementById('outlineWrap').innerText;
+    var meta = document.getElementById('metaSection').innerText;
+    var full = text + (meta ? '\n\n' + meta : '');
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(full).then(function(){ alert('Outline copied! ✅'); });
+    } else {
+      var ta = document.createElement('textarea');
+      ta.value = full; document.body.appendChild(ta); ta.select();
+      document.execCommand('copy'); document.body.removeChild(ta);
+      alert('Outline copied! ✅');
+    }
+  }
+
+  function openModal()  { document.getElementById('modal').style.display = 'flex'; }
+  function closeModal() { document.getElementById('modal').style.display = 'none'; }
+  document.getElementById('modal').addEventListener('click', function(e){ if(e.target===this) closeModal(); });
+
+  function escHtml(t) {
+    return String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+</script>
+</body>
+</html>
